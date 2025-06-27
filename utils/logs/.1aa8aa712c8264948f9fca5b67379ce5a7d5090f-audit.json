@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "/home/nusat/nubot/utils/logs/.1aa8aa712c8264948f9fca5b67379ce5a7d5090f-audit.json",
+    "files": [
+        {
+            "date": 1747026801391,
+            "name": "/home/nusat/nubot/utils/logs/logwa-2025-05.log",
+            "hash": "2cbcc46711d730d833182b147da983650d7c85c63810def4b2d4b765e764506c"
+        },
+        {
+            "date": 1749111664391,
+            "name": "/home/nusat/nubot/utils/logs/logwa-2025-06.log",
+            "hash": "6e27f9a4793f8fc08ae8c37b592d5ad0edc29e2c43cd24e12b0fd24365d1df63"
+        }
+    ],
+    "hashType": "sha256"
+}

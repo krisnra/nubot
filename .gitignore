@@ -1,6 +1,12 @@
 # Compiled class file
 *.class
 
+# Folder
+node_modules/
+auth_info/
+output.log
+.env
+
 # Log file
 *.log
 
