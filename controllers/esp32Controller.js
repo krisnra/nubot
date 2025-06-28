@@ -1,5 +1,5 @@
 const { logAlarm, logBrankas } = require("../utils/dblogger");
-const { allowedDevices } = require("../config/whitelist");
+const { getAllowedDevices } = require("../config/whitelist");
 const { sendWa } = require("../service/waService");
 const EventEmitter = require("events");
 
@@ -9,17 +9,16 @@ const dataEvents = new EventEmitter();
 const esp32Devices = {};
 
 // === Handle data masuk dari ESP32 ===
-function handleEsp32Data(req, res) {
+async function handleEsp32Data(req, res) {
   const { deviceId, status, data } = req.body;
+  const allowedDevices = await getAllowedDevices();
 
   if (
     !deviceId ||
     typeof deviceId !== "string" ||
     !allowedDevices.includes(deviceId)
   ) {
-    return res
-      .status(403)
-      .json({ message: "❌ Akses ditolak! deviceId tidak diizinkan." });
+    return res.status(403).json({ message: "❌ Akses ditolak! deviceId tidak diizinkan." });
   }
 
   if (!status && !data) {
@@ -43,19 +42,20 @@ function handleEsp32Data(req, res) {
       logBrankas(data, "info");
       dataEvents.emit("dataUpdated", data);
     }
-
-    // Broadcast via WhatsApp
+    // Kirim notifikasi WA hanya ke role yang sesuai
     sendWa(deviceId, data);
   }
 
   res.status(200).json({ message: "✅ Data diterima dengan sukses!" });
 }
 
-function updateEsp32Status(req, res) {
+// === Update status device
+async function updateEsp32Status(req, res) {
   const { deviceId, status } = req.body;
+  const allowedDevices = await getAllowedDevices();
 
-  if (!deviceId || !status) {
-    return res.status(400).json({ message: "❌ Data tidak lengkap!" });
+  if (!deviceId || !status || !allowedDevices.includes(deviceId)) {
+    return res.status(400).json({ message: "❌ Data tidak lengkap atau device tidak diizinkan!" });
   }
 
   const existing = esp32Devices[deviceId] || {};
@@ -79,16 +79,6 @@ function isEsp32Active(deviceId) {
 function getLatestData(deviceId) {
   return esp32Devices[deviceId]?.data || null;
 }
-
-// === Ambil semua status ESP32
-// function getAllEsp32Status() {
-//   return Object.entries(esp32Devices).map(([id, dev]) => ({
-//     deviceId: id,
-//     status: isEsp32Active(id) ? "Connected" : "Disconnected",
-//     lastData: dev.data || "-",
-//     lastUpdate: dev.updatedAt,
-//   }));
-// }
 
 module.exports = {
   handleEsp32Data,

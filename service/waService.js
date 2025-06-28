@@ -11,7 +11,7 @@ const {
   dataEvents,
 } = require("../controllers/esp32Controller");
 const { logWA, logAlarm, logBrankas } = require("../utils/dblogger");
-const { allowedNumbers } = require("../config/whitelist");
+const { getAllowedNumbers } = require("../config/whitelist");
 const qrcode = require("qrcode-terminal");
 const express = require("express");
 
@@ -46,6 +46,8 @@ async function startWhatsAppBot() {
   });
 
   sock.ev.on("messages.upsert", async ({ messages }) => {
+    const allowedNumbers = await getAllowedNumbers();
+    
     for (const m of messages || []) {
       if (m.key.fromMe || !m.message) continue;
       const jid = m.key.remoteJid;
