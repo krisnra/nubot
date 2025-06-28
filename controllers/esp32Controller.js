@@ -1,14 +1,14 @@
-const { logAlarm, logBrankas } = require("../utils/logger");
-const EventEmitter = require("events");
+const { logAlarm, logBrankas } = require("../utils/dblogger");
 const { allowedDevices } = require("../config/whitelist");
+const { sendWa } = require("../service/waService");
+const EventEmitter = require("events");
 
 const alarmEvents = new EventEmitter();
 const dataEvents = new EventEmitter();
 
-let lastAlarmStatus = false;
-
 const esp32Devices = {};
 
+// === Handle data masuk dari ESP32 ===
 function handleEsp32Data(req, res) {
   const { deviceId, status, data } = req.body;
 
@@ -26,23 +26,27 @@ function handleEsp32Data(req, res) {
     return res.status(400).json({ message: "❌ Data tidak lengkap!" });
   }
 
+  // Update data device
+  const existing = esp32Devices[deviceId] || {};
   esp32Devices[deviceId] = {
-    status,
-    data,
+    status: status || existing.status || "UNKNOWN",
+    data: data || existing.data || null,
     updatedAt: Date.now(),
   };
 
-  if (deviceId === "ESP32-001" && data !== "1") {
-    logAlarm(data, "info");
-  }
+  // Jika bukan heartbeat ("1")
+  if (data !== "1") {
+    if (deviceId === "ESP32-001") {
+      logAlarm(data, "info");
+      alarmEvents.emit("alarmActive");
+    } else if (deviceId === "ESP32-002") {
+      logBrankas(data, "info");
+      dataEvents.emit("dataUpdated", data);
+    }
 
-  if (deviceId === "ESP32-002" && data !== "1") {
-    const espData = getESP32Data();
-    logBrankas(espData, "info");
-    dataEvents.emit("dataUpdated", data);
+    // Broadcast via WhatsApp
+    sendWa(deviceId, data);
   }
-
-  updateSatelliteAlarmStatus();
 
   res.status(200).json({ message: "✅ Data diterima dengan sukses!" });
 }
@@ -54,60 +58,43 @@ function updateEsp32Status(req, res) {
     return res.status(400).json({ message: "❌ Data tidak lengkap!" });
   }
 
-  esp32Devices[deviceId] = { status, updatedAt: Date.now() };
-
-  updateSatelliteAlarmStatus();
+  const existing = esp32Devices[deviceId] || {};
+  esp32Devices[deviceId] = {
+    ...existing,
+    status,
+    updatedAt: Date.now(),
+  };
 
   res.status(200).json({ message: "✅ Status diperbarui!" });
 }
 
+// === Cek apakah device aktif (update < 10 detik lalu)
 function isEsp32Active(deviceId) {
-  const now = Date.now();
-
-  if (!esp32Devices[deviceId]) {
-    return false;
-  }
-
-  const device = esp32Devices[deviceId];
-
-  if (now - device.updatedAt > 10000) {
-    device.status = "OFFLINE";
-  }
-
-  return device.status === "OK";
+  const dev = esp32Devices[deviceId];
+  if (!dev) return false;
+  return Date.now() - dev.updatedAt <= 10000 && dev.status === "OK";
 }
 
-function isSatelliteAlarmActive() {
-  return Object.entries(esp32Devices).some(
-    ([deviceId, device]) =>
-      deviceId === "ESP32-001" && Number(device.data) === 21
-  );
+// === Ambil data terbaru
+function getLatestData(deviceId) {
+  return esp32Devices[deviceId]?.data || null;
 }
 
-function updateSatelliteAlarmStatus() {
-  const currentAlarmStatus = isSatelliteAlarmActive();
-  if (currentAlarmStatus !== lastAlarmStatus) {
-    if (currentAlarmStatus) {
-      logAlarm("🚨 Alarm dalam keadaan AKTIF!", "info");
-      alarmEvents.emit("alarmActive");
-    } else {
-      logAlarm("✅ Tidak ada alarm yang aktif.", "info");
-      alarmEvents.emit("alarmInactive");
-    }
-  }
-
-  lastAlarmStatus = currentAlarmStatus;
-}
-
-function getESP32Data() {
-  return esp32Devices["ESP32-002"] ? esp32Devices["ESP32-002"].data : null;
-}
+// === Ambil semua status ESP32
+// function getAllEsp32Status() {
+//   return Object.entries(esp32Devices).map(([id, dev]) => ({
+//     deviceId: id,
+//     status: isEsp32Active(id) ? "Connected" : "Disconnected",
+//     lastData: dev.data || "-",
+//     lastUpdate: dev.updatedAt,
+//   }));
+// }
 
 module.exports = {
   handleEsp32Data,
   updateEsp32Status,
   isEsp32Active,
+  getLatestData,
   alarmEvents,
-  getESP32Data,
   dataEvents,
 };

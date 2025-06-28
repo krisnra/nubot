@@ -1,181 +1,133 @@
+// waService.js - Optimized & Ringkas
 const {
   default: makeWASocket,
   DisconnectReason,
   useMultiFileAuthState,
 } = require("baileys");
-require("dotenv").config();
-const express = require("express");
 const {
   isEsp32Active,
   alarmEvents,
   getESP32Data,
   dataEvents,
 } = require("../controllers/esp32Controller");
-const { logWA, logAlarm, logBrankas } = require("../utils/logger");
+const { logWA, logAlarm, logBrankas } = require("../utils/dblogger");
 const { allowedNumbers } = require("../config/whitelist");
 const qrcode = require("qrcode-terminal");
-
-const activeUserAlarmJids = new Set();
-const activeUserBrankasJids = new Set();
-
-async function startWhatsAppBot() {
-  const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
-  const sock = makeWASocket({ auth: state });
-  sock.ev.on("creds.update", saveCreds);
-
-  sock.ev.on("connection.update", ({ connection, lastDisconnect, qr }) => {
-    if (qr) {
-      qrcode.generate(qr, { small: true }); // tampilkan QR ke terminal
-    }
-
-    if (connection === "close") {
-      const shouldReconnect =
-        lastDisconnect?.error?.output?.statusCode !==
-        DisconnectReason.loggedOut;
-      logWA(`Koneksi terputus, mencoba reconnect: ${shouldReconnect}`, "error");
-      if (shouldReconnect) {
-        setTimeout(() => startWhatsAppBot(), 5000);
-      }
-    } else if (connection === "open") {
-      logWA("WhatsApp bot terhubung!", "info");
-    }
-  });
-
-  sock.ev.on("messages.upsert", async (event) => {
-    if (!event.messages || event.messages.length === 0) return;
-
-    for (const m of event.messages) {
-      if (m.key.fromMe) return;
-      const jid = m.key.remoteJid;
-
-      if (!allowedNumbers.includes(jid)) {
-        logWA(`❌ Akses ditolak untuk ${jid}`, "error");
-        continue;
-      }
-
-      if (jid.includes("@g.us")) {
-        logWA(`Pesan dari grup ${jid} diabaikan.`, "info");
-        continue;
-      }
-
-      let msgText =
-        m.message?.conversation || m.message?.extendedTextMessage?.text || "";
-
-      if (!msgText.trim()) {
-        logWA(`Pesan kosong dari ${jid} diabaikan.`, "info");
-        continue;
-      }
-
-      let response = "";
-      switch (msgText.trim().toLowerCase()) {
-        case "/alarm on":
-          if (isEsp32Active("ESP32-001")) {
-            activeUserAlarmJids.add(jid);
-            response = "🚨 Alarm notifications activated!";
-            logAlarm(`User ${jid} mengaktifkan notifikasi alarm.`, "info");
-            logAlarm(
-              `User active sekarang: ${[...activeUserAlarmJids].join(", ")}`,
-              "info"
-            );
-          } else {
-            response = "⚠️ ESP32 Disconnected. Tidak dapat mengaktifkan alarm.";
-            logAlarm(
-              `User ${jid} mencoba mengaktifkan notifikasi alarm tetapi ESP32 tidak terhubung.`,
-              "info"
-            );
-          }
-          break;
-
-        case "/alarm off":
-          activeUserAlarmJids.delete(jid);
-          response = "❌ Alarm notifications deactivated.";
-          logAlarm(`User ${jid} menonaktifkan notifikasi alarm.`, "info");
-          logAlarm(
-            `User active sekarang: ${[...activeUserAlarmJids].join(", ")}`,
-            "info"
-          );
-          break;
-
-        case "/brankas on":
-          activeUserBrankasJids.add(jid);
-          response = "✅ Brankas notifications activated.";
-          logBrankas(`User ${jid} mengaktifkan notifikasi alarm.`, "info");
-          logBrankas(
-            `User active sekarang: ${[...activeUserBrankasJids].join(", ")}`,
-            "info"
-          );
-          break;
-
-        case "/brankas off":
-          response = "❌ Brankas notifications deactivated.";
-          activeUserBrankasJids.delete(jid);
-          logBrankas(`User ${jid} menonaktifkan notifikasi alarm.`, "info");
-          logBrankas(
-            `User active sekarang: ${[...activeUserBrankasJids].join(", ")}`,
-            "info"
-          );
-          break;
-
-        // default:
-        //   response =
-        //     "Perintah yang tersedia:\n" +
-        //     "/alarm on - Mengaktifkan notifikasi alarm\n" +
-        //     "/alarm off  - Menonaktifkan notifikasi alarm\n" +
-        //     "/brankas on - Mengaktifkan notifikasi brankas\n" +
-        //     "/brankas off  - Menonaktifkan notifikasi brankas";
-      }
-      if (response) {
-        await sock.sendMessage(jid, { text: response });
-      }
-    }
-  });
-
-  monitorSatelliteAlarm(sock);
-  monitorBrankasData(sock);
-
-  return sock;
-}
-
-async function sendAlarmNotification(sock) {
-  for (const jid of activeUserAlarmJids) {
-    try {
-      await sock.sendMessage(jid, { text: "🚨 Alarm sedang Aktif!" });
-      logAlarm(`📩 Notifikasi alarm dikirim ke ${jid}`, "info");
-    } catch (error) {
-      logAlarm(`❌ Gagal mengirim pesan ke ${jid}:`, "error");
-    }
-  }
-}
-
-async function sendBrankasData(sock) {
-  const esp32Data = getESP32Data();
-  for (const jid of activeUserBrankasJids) {
-    try {
-      await sock.sendMessage(jid, { text: esp32Data });
-      logBrankas(`📩 Notifikasi brankas dikirim ke ${jid}`, "info");
-    } catch (error) {
-      logBrankas(`❌ Gagal mengirim pesan brankas ke ${jid}:`, "info");
-    }
-  }
-}
-
-function monitorSatelliteAlarm(sock) {
-  alarmEvents.on("alarmActive", () => {
-    sendAlarmNotification(sock);
-  });
-}
-
-function monitorBrankasData(sock) {
-  dataEvents.on("dataUpdated", () => {
-    sendBrankasData(sock);
-  });
-}
+const express = require("express");
 
 const app = express();
 app.use(express.json());
 
+const activeUserAlarmJids = new Set();
+const activeUserBrankasJids = new Set();
+let sock; // WA socket instance
+
+const deviceLabels = {
+  "ESP32-001": "ESP32-Alarm",
+  "ESP32-002": "ESP32-Brankas",
+};
+
+async function startWhatsAppBot() {
+  const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
+  sock = makeWASocket({ auth: state });
+
+  sock.ev.on("creds.update", saveCreds);
+  sock.ev.on("connection.update", ({ connection, lastDisconnect, qr }) => {
+    if (qr) qrcode.generate(qr, { small: true });
+    if (connection === "close") {
+      const shouldReconnect =
+        lastDisconnect?.error?.output?.statusCode !==
+        DisconnectReason.loggedOut;
+      logWA(`Koneksi terputus, reconnect: ${shouldReconnect}`, "error");
+      if (shouldReconnect) setTimeout(startWhatsAppBot, 5000);
+    } else if (connection === "open") {
+      logWA("WA Bot terhubung!", "info");
+    }
+  });
+
+  sock.ev.on("messages.upsert", async ({ messages }) => {
+    for (const m of messages || []) {
+      if (m.key.fromMe || !m.message) continue;
+      const jid = m.key.remoteJid;
+      if (!allowedNumbers.includes(jid) || jid.includes("@g.us")) continue;
+
+      const msg =
+        m.message?.conversation || m.message?.extendedTextMessage?.text || "";
+      const cmd = msg.trim().toLowerCase();
+      if (!cmd) return;
+
+      const map = {
+        "/alarm on": () => toggleNotif(jid, "alarm", true),
+        "/alarm off": () => toggleNotif(jid, "alarm", false),
+        "/brankas on": () => toggleNotif(jid, "brankas", true),
+        "/brankas off": () => toggleNotif(jid, "brankas", false),
+      };
+
+      if (map[cmd]) {
+        const response = await map[cmd]();
+        if (response) sock.sendMessage(jid, { text: response });
+      }
+    }
+  });
+
+  alarmEvents.on("alarmActive", () =>
+    broadcast(activeUserAlarmJids, "🚨 Alarm sedang Aktif!", logAlarm)
+  );
+  dataEvents.on("dataUpdated", () => {
+    const data = getESP32Data();
+    broadcast(activeUserBrankasJids, data, logBrankas);
+  });
+}
+
+async function toggleNotif(jid, type, enable) {
+  const set = type === "alarm" ? activeUserAlarmJids : activeUserBrankasJids;
+  const logFn = type === "alarm" ? logAlarm : logBrankas;
+
+  if (enable) {
+    set.add(jid);
+  } else {
+    set.delete(jid);
+  }
+
+  logFn(
+    `User ${jid} ${
+      enable ? "mengaktifkan" : "menonaktifkan"
+    } notifikasi ${type}`,
+    "info"
+  );
+  return `${enable ? "✅" : "❌"} ${
+    type.charAt(0).toUpperCase() + type.slice(1)
+  } notifications ${enable ? "activated" : "deactivated"}.`;
+}
+
+async function broadcast(jids, message, logger) {
+  for (const jid of jids) {
+    try {
+      await sock.sendMessage(jid, { text: message });
+      logger(`📩 Pesan dikirim ke ${jid}`, "info");
+    } catch (err) {
+      logger(`❌ Gagal kirim ke ${jid}: ${err}`, "error");
+    }
+  }
+}
+
+async function sendWa(deviceId, message) {
+  const label = deviceLabels[deviceId] || deviceId;
+  const msg = `[${label}] ${message}`;
+  let targetJids = [];
+
+  if (deviceId === "ESP32-001") {
+    targetJids = [...activeUserAlarmJids];
+  } else if (deviceId === "ESP32-002") {
+    targetJids = [...activeUserBrankasJids];
+  }
+
+  await broadcast(targetJids, msg, logWA);
+}
+
 module.exports = {
   startWhatsAppBot,
+  sendWa,
   activeUserAlarmJids,
   activeUserBrankasJids,
 };

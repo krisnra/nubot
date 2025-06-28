@@ -5,7 +5,6 @@ const allowedNumbers = [
   "6281329888355@s.whatsapp.net", // taraf
   "6285234554015@s.whatsapp.net", //azka
   "6282171102642@s.whatsapp.net", //nadilla
-  "628571224045@s.whatsapp.net", //rhuby
   "6281366039113@s.whatsapp.net", //fahreza
   "6285943005715@s.whatsapp.net", //jordi
   "628986131577@s.whatsapp.net", //dilla
@@ -14,6 +13,7 @@ const allowedNumbers = [
   "6281246685642@s.whatsapp.net", //fahru
   "62895380717609@s.whatsapp.net", //hanun
   "6285694395089@s.whatsapp.net", //fahmi
+  "6285727537168@s.whatsapp.net", //Mbak Dine
 ];
 
 const allowedDevices = ["ESP32-001", "ESP32-002"];

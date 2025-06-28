@@ -12,7 +12,7 @@ const authRoutes = require("./routes/authRoutes");
 const homeRoutes = require("./routes/homeRoutes");
 const { esp32Devices } = require("./controllers/esp32Controller");
 const { startWhatsAppBot } = require("./service/waService");
-const { logServer, logESP32 } = require("./utils/logger");
+const { logServer, logESP32 } = require("./utils/dblogger");
 const { requireAuth } = require("./middleware/authMiddleware");
 
 const app = express();

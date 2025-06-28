@@ -1,4 +1,4 @@
-const { logESP32 } = require("../utils/logger");
+const { logESP32 } = require("../utils/dblogger");
 
 function validateAPIKey(req, res, next) {
   const apiKey = req.headers["x-api-key"];
