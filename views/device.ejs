@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Daftar Nomor WhatsApp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    />
+    <style>
+      body {
+        background: #f7f9fb;
+        font-family: "Poppins", sans-serif;
+      }
+      .btn-menu {
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 0 5px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.12s;
+        width: 100%;
+        height: 100%;
+      }
+      .btn-menu:focus,
+      .btn-menu:hover {
+        background: #f1f1f5 !important; /* efek hover ringan */
+      }
+      .dropdown-menu.action-menu {
+        min-width: 130px;
+        max-width: 200px;
+        width: auto !important;
+        left: auto !important;
+        right: 0 !important;
+        z-index: 9999;
+      }
+
+      .dropdown-menu.action-menu .dropdown-item {
+        color: #fff;
+        font-weight: 500;
+        padding: 8px 18px;
+        border-radius: 7px;
+        transition: background 0.13s;
+      }
+      .dropdown-menu.action-menu .dropdown-item:hover {
+        background: #31384c;
+      }
+      .dropdown-menu.action-menu .text-warning svg {
+        margin-right: 2px;
+      }
+      .dropdown-menu.action-menu .text-danger svg {
+        margin-right: 2px;
+      }
+      .table td,
+      .table th {
+        text-align: center;
+        vertical-align: middle;
+      }
+      .action-btn {
+        min-width: 70px;
+
+        .dropdown-toggle {
+          min-width: 70px;
+          background: #fff;
+          color: #232323;
+          font-weight: 500;
+        }
+      }
+      @media (max-width: 900px) {
+        .table-responsive {
+          font-size: 13px;
+        }
+        .action-btn {
+          min-width: 60px;
+          font-size: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container py-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">
+          <span style="font-size: 1.3em">🔌</span> Daftar Device
+        </h5>
+        <button class="btn btn-primary" id="btnAddDevice">Tambah Device</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered shadow-sm bg-white">
+          <thead class="table-dark">
+            <tr>
+              <th>No</th>
+              <th>Device ID</th>
+              <th>Nama Device</th>
+              <th style="width: 140px">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (devices.length === 0) { %>
+            <tr>
+              <td colspan="4" class="text-center text-muted">Belum ada data</td>
+            </tr>
+            <% } else { devices.forEach((d, i) => { %>
+            <tr>
+              <td><%= i+1 %></td>
+              <td><%= d.device_id %></td>
+              <td><%= d.name %></td>
+              <td>
+                <div class="dropdown text-center">
+                  <button
+                    class="btn btn-menu"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    data-bs-container="body"
+                    aria-expanded="false"
+                  >
+                    <span style="font-size: 1.7em; color: #ffbe23"
+                      >&#8942;</span
+                    >
+                  </button>
+                  <ul
+                    class="dropdown-menu dropdown-menu-end shadow border-0 action-menu"
+                  >
+                    <li>
+                      <a
+                        class="dropdown-item d-flex align-items-center text-warning btnEditDevice"
+                        href="#"
+                        data-id="<%= d.id %>"
+                        data-device_id="<%= d.device_id %>"
+                        data-name="<%= d.name %>"
+                      >
+                        <svg
+                          width="18"
+                          height="18"
+                          fill="none"
+                          stroke="#FFC107"
+                          stroke-width="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M15.232 5.232l3.536 3.536M9 13.5V17h3.5l8-8a2 2 0 0 0-2.828-2.828l-8 8z"
+                          ></path>
+                        </svg>
+                        <span class="ms-2">Edit</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        class="dropdown-item d-flex align-items-center text-danger btnDeleteDevice"
+                        href="#"
+                        data-id="<%= d.id %>"
+                      >
+                        <svg
+                          width="18"
+                          height="18"
+                          fill="none"
+                          stroke="#E7466D"
+                          stroke-width="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M10 11v6M14 11v6M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14"
+                          ></path>
+                        </svg>
+                        <span class="ms-2">Delete</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            <% }) } %>
+          </tbody>
+        </table>
+      </div>
+      <a href="/" class="btn btn-secondary mt-3">&larr; Home</a>
+    </div>
+
+    <!-- Modal Add/Edit Device (mirip number) -->
+    <div class="modal fade" id="modalDevice" tabindex="-1">
+      <div class="modal-dialog">
+        <form class="modal-content" id="formDevice">
+          <div class="modal-header">
+            <h5 class="modal-title">Tambah / Edit Device</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="inputDeviceIdDb" name="id" />
+            <div class="mb-2">
+              <label>Device ID</label>
+              <input
+                type="text"
+                class="form-control"
+                id="inputDeviceId"
+                name="device_id"
+                required
+              />
+            </div>
+            <div class="mb-2">
+              <label>Nama Device</label>
+              <input
+                type="text"
+                class="form-control"
+                id="inputDeviceName"
+                name="name"
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Batal
+            </button>
+            <button type="submit" class="btn btn-primary">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const modalDevice = new bootstrap.Modal(
+        document.getElementById("modalDevice")
+      );
+      $("#btnAddDevice").click(() => {
+        $("#formDevice")[0].reset();
+        $("#inputDeviceIdDb").val("");
+        $(".modal-title").text("Tambah Device");
+        modalDevice.show();
+      });
+      $(".btnEditDevice").click(function () {
+        $("#inputDeviceIdDb").val($(this).data("id"));
+        $("#inputDeviceId").val($(this).data("device_id"));
+        $("#inputDeviceName").val($(this).data("name"));
+        $(".modal-title").text("Edit Device");
+        modalDevice.show();
+      });
+      $("#formDevice").submit(async function (e) {
+        e.preventDefault();
+        const id = $("#inputDeviceIdDb").val();
+        const data = {
+          device_id: $("#inputDeviceId").val(),
+          name: $("#inputDeviceName").val(),
+        };
+        let url = "/device/add",
+          method = "POST";
+        if (id) {
+          url = `/device/edit/${id}`;
+          method = "PUT";
+        }
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        if ((await res.json()).success) location.reload();
+      });
+      $(".btnDeleteDevice").click(function () {
+        if (confirm("Yakin ingin menghapus?")) {
+          fetch(`/device/delete/${$(this).data("id")}`, { method: "DELETE" })
+            .then((r) => r.json())
+            .then((j) => {
+              if (j.success) location.reload();
+            });
+        }
+      });
+    </script>
+  </body>
+</html>

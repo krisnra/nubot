@@ -7,9 +7,11 @@ const path = require("path");
 const http = require("http");
 const socketIo = require("socket.io");
 
-const esp32Routes = require("./routes/esp32Routes");
-const authRoutes = require("./routes/authRoutes");
-const homeRoutes = require("./routes/homeRoutes");
+const esp32Routes = require("./routes/esp32Route");
+const authRoutes = require("./routes/authRoute");
+const homeRoutes = require("./routes/homeRoute");
+const numberRoute = require("./routes/numberRoute");
+const deviceRoute = require("./routes/deviceRoute");
 const { esp32Devices } = require("./controllers/esp32Controller");
 const { startWhatsAppBot } = require("./service/waService");
 const { logServer, logESP32 } = require("./utils/dblogger");
@@ -38,6 +40,8 @@ app.set("views", path.join(__dirname, "views"));
 
 app.use("/esp32", esp32Routes);
 app.use("/auth", authRoutes);
+app.use("/number", numberRoute);
+app.use("/device", deviceRoute);
 app.use("/", homeRoutes, requireAuth);
 
 app.use((req, res) => {
@@ -72,7 +76,7 @@ setInterval(() => {
 
 const PORT = process.env.PORT;
 const HOST = process.env.HOST;
-server.listen(PORT,HOST, () => {
+server.listen(PORT, HOST, () => {
   logServer(`\u2705 Server berjalan di http://${HOST}:${PORT}`, "info");
 });
 

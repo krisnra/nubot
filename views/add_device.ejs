@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <title><%= title %></title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    />
+  </head>
+  <body class="container py-5">
+    <h2>Tambah Device</h2>
+    <% if (typeof error !== 'undefined') { %>
+    <div class="alert alert-danger"><%= error %></div>
+    <% } %> <% if (typeof success !== 'undefined') { %>
+    <div class="alert alert-success">Device berhasil ditambahkan!</div>
+    <% } %>
+    <form method="post">
+      <div class="mb-3">
+        <label>Device ID</label>
+        <input name="device_id" class="form-control" required />
+      </div>
+      <div class="mb-3">
+        <label>Nama Device</label>
+        <input name="device_name" class="form-control" />
+      </div>
+      <button class="btn btn-primary">Tambah</button>
+    </form>
+  </body>
+</html>
