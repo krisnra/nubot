@@ -230,34 +230,33 @@
       </div>
     </nav>
 
-    <% const alarmUsers = (activeUserAlarms || []).map(u => ({ number: u.jid,
-    name: u.name, type: "Alarm" })); const brankasUsers = (activeUserBrankas ||
-    []).map(u => ({ number: u.jid, name: u.name, type: "Brankas" })); const
-    activeUsers = alarmUsers.concat(brankasUsers); %>
+    <% const alarmUsers = (typeof activeUserAlarms !== "undefined" ?
+    activeUserAlarms : []).map(u => ({ number: u, type: "Alarm" })); const
+    brankasUsers = (typeof activeUserBrankas !== "undefined" ? activeUserBrankas
+    : []).map(u => ({ number: u, type: "Brankas" })); const activeUsers =
+    alarmUsers.concat(brankasUsers); %>
 
     <div class="container main-container">
       <!-- TABEL USER -->
       <div class="table-container">
-        <h5 class="mb-3 fw-semibold">📲 WhatsApp User</h5>
+        <h5 class="mb-3 fw-semibold">📲 User WhatsApp Aktif</h5>
         <div class="table-responsive">
           <table class="table table-sm table-bordered mb-0">
             <thead class="table-dark">
               <tr>
                 <th style="width: 54px">No</th>
-                <th>Name</th>
-                <th>WhatsApp Number</th>
-                <th>Category</th>
+                <th>Nomor WhatsApp</th>
+                <th>Tipe User</th>
               </tr>
             </thead>
             <tbody>
               <% if (activeUsers.length === 0) { %>
               <tr>
-                <td colspan="4" class="text-muted">Tidak ada user aktif</td>
+                <td colspan="3" class="text-muted">Tidak ada user aktif</td>
               </tr>
               <% } else { %> <% activeUsers.forEach((user, i) => { %>
               <tr>
                 <td><%= i + 1 %></td>
-                <td><%= user.name %></td>
                 <td><%= user.number %></td>
                 <td><%= user.type %></td>
               </tr>
@@ -269,82 +268,38 @@
 
       <!-- CARD ESP32 -->
       <div class="status-container">
-  <% esp32Devices.forEach((device) => { %>
-    <div id="<%= device.name %>-card"
-      class="card-esp32 p-4 text-center <% if (device.name === 'ESP32-001' && device.alarm) { %> card-warning <% } %>">
-      <div class="card-body">
-        <h5 class="card-title">
-          <% if (device.name === 'ESP32-001') { %> ESP32-Alarm <% } else if (device.name === 'ESP32-002') { %> ESP32-Brankas <% } else { %> <%= device.name %> <% } %>
-        </h5>
-        <span id="<%= device.name %>-status-icon"
-          class="status-icon <% if (device.name === 'ESP32-001' && device.alarm) { %> bg-warning <% } else if (device.status === 'Connected') { %> bg-success <% } else { %> bg-danger <% } %>"></span>
-        <p class="card-text mt-2 mb-0">
-          Status: <strong id="<%= device.name %>-status-text"><%= device.status %></strong>
-        </p>
+        <% esp32Devices.forEach((device) => { %>
+        <div
+          class="card-esp32 p-4 text-center <% if (device.name === 'ESP32-001' && device.alarm) { %> card-warning <% } %>"
+        >
+          <div class="card-body">
+            <h5 class="card-title">
+              <% if (device.name === 'ESP32-001') { %> ESP32-Alarm <% } else if
+              (device.name === 'ESP32-002') { %> ESP32-Brankas <% } else { %>
+              <%= device.name %> <% } %>
+            </h5>
+            <span
+              class="status-icon <% if (device.name === 'ESP32-001' && device.alarm) { %> bg-warning <% } else if (device.status === 'Connected') { %> bg-success <% } else { %> bg-danger <% } %>"
+            ></span>
+            <p class="card-text mt-2 mb-0">
+              Status: <strong><%= device.status %></strong>
+            </p>
+          </div>
+        </div>
+        <% }) %>
       </div>
     </div>
-  <% }) %>
-</div>
 
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    const logoutBtn = document.getElementById("logoutBtn");
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => {
+      document.getElementById("logoutBtn").onclick = () =>
+        (location.href = "/auth/logout");
+      document.getElementById("logoutBtn").addEventListener("click", () => {
         window.location.href = "/auth/logout";
-     });
-    }
-    setInterval(() => {
-    $.get("/api/users", (data) => {
-      let html = "";
-     if (data.users.length === 0) {
-  html = `
-    <tr>
-      <td colspan="4" class="text-muted">Tidak ada user aktif</td>
-    </tr>`;
-} else {
-  data.users.forEach((user, i) => {
-    html += `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${user.name}</td>
-        <td>${user.jid}</td>
-        <td>${user.type}</td>
-      </tr>`;
-  });
-}
-
-    }, 5000);
-    setInterval(() => {
-    $.get("/api/devices", (data) => {
-        data.devices.forEach((device) => {
-        const card = $(`#${device.name}-card`);
-      const icon = $(`#${device.name}-status-icon`);
-      const text = $(`#${device.name}-status-text`);
-
-      // Reset class
-      card.removeClass("card-warning");
-      icon.removeClass("bg-warning bg-success bg-danger");
-
-      // Update status
-      if (device.name === "ESP32-001" && device.alarm) {
-        card.addClass("card-warning");
-        icon.addClass("bg-warning");
-      } else if (device.status === "Connected") {
-        icon.addClass("bg-success");
-      } else {
-        icon.addClass("bg-danger");
-      }
-
-      // Update text
-      text.text(device.status);
-    });
-  });
-}, 1000);
-
+      });
+      setInterval(() => {
+        window.location.reload();
+      }, 5000);
     </script>
   </body>
 </html>

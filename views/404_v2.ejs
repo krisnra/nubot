@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>404 - Page Not Found</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        width: 100vw;
+      }
+      .fullpage-404 {
+        width: 100vw;
+        height: 100vh;
+        min-height: 100vh;
+        min-width: 100vw;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        box-sizing: border-box;
+      }
+      .img404 {
+        width: 75vw;
+        max-width: 75vw;
+        height: auto;
+        max-height: 60vh;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto 2vw auto;
+        user-select: none;
+        pointer-events: none;
+      }
+      .btn404 {
+        background: #3e65c4;
+        color: #fff;
+        border: none;
+        border-radius: 36px;
+        padding: 18px 40px;
+        font-size: 1.4rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        cursor: pointer;
+        box-shadow: 0 2px 12px rgba(44, 62, 80, 0.09);
+        outline: none;
+        text-decoration: none;
+        margin-top: 0;
+        display: inline-block;
+        transition: background 0.2s;
+      }
+      .btn404:hover {
+        background: #5678cd;
+      }
+      @media (max-width: 768px) {
+        .img404 {
+          max-height: 46vh;
+        }
+        .btn404 {
+          padding: 14px 12vw;
+          font-size: 1.1rem;
+        }
+      }
+      @media (max-width: 500px) {
+        .img404 {
+          max-height: 34vh;
+        }
+        .btn404 {
+          padding: 12px 9vw;
+          font-size: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="fullpage-404">
+      <img src="/image/page404.png" alt="404 Not Found" class="img404" />
+      <a href="/" class="btn404">GO BACK HOME</a>
+    </div>
+  </body>
+</html>

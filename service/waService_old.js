@@ -5,6 +5,7 @@ const {
   useMultiFileAuthState,
 } = require("baileys");
 const {
+  isEsp32Active,
   alarmEvents,
   getESP32Data,
   dataEvents,
@@ -17,8 +18,8 @@ const express = require("express");
 const app = express();
 app.use(express.json());
 
-const activeUserAlarmJids = new Map();
-const activeUserBrankasJids = new Map();
+const activeUserAlarmJids = new Set();
+const activeUserBrankasJids = new Set();
 let sock; // WA socket instance
 
 const deviceLabels = {
@@ -33,25 +34,24 @@ async function startWhatsAppBot() {
   sock.ev.on("creds.update", saveCreds);
   sock.ev.on("connection.update", ({ connection, lastDisconnect, qr }) => {
     if (qr) qrcode.generate(qr, { small: true });
-    // if (connection === "close") {
-    //   const shouldReconnect =
-    //     lastDisconnect?.error?.output?.statusCode !==
-    //     DisconnectReason.loggedOut;
-    //   logWA(`Koneksi terputus, reconnect: ${shouldReconnect}`, "error");
-    //   if (shouldReconnect) setTimeout(startWhatsAppBot, 5000);
-    // } else if (connection === "open") {
-    //   logWA("WA Bot terhubung!", "info");
-    // }
+    if (connection === "close") {
+      const shouldReconnect =
+        lastDisconnect?.error?.output?.statusCode !==
+        DisconnectReason.loggedOut;
+      logWA(`Koneksi terputus, reconnect: ${shouldReconnect}`, "error");
+      if (shouldReconnect) setTimeout(startWhatsAppBot, 5000);
+    } else if (connection === "open") {
+      logWA("WA Bot terhubung!", "info");
+    }
   });
 
   sock.ev.on("messages.upsert", async ({ messages }) => {
     const allowedNumbers = await getAllowedNumbers();
-
+    
     for (const m of messages || []) {
       if (m.key.fromMe || !m.message) continue;
       const jid = m.key.remoteJid;
-      if (!allowedNumbers.some((u) => u.jid === jid) || jid.includes("@g.us"))
-        continue;
+      if (!allowedNumbers.includes(jid) || jid.includes("@g.us")) continue;
 
       const msg =
         m.message?.conversation || m.message?.extendedTextMessage?.text || "";
@@ -82,38 +82,33 @@ async function startWhatsAppBot() {
 }
 
 async function toggleNotif(jid, type, enable) {
-  const allowedNumbers = await getAllowedNumbers();
-  const user = allowedNumbers.find((u) => u.jid === jid);
-  const name = user?.name || jid;
-
   const set = type === "alarm" ? activeUserAlarmJids : activeUserBrankasJids;
   const logFn = type === "alarm" ? logAlarm : logBrankas;
 
   if (enable) {
-    set.set(jid, name);
+    set.add(jid);
   } else {
     set.delete(jid);
   }
 
   logFn(
-    `User ${jid} (${name}) ${
+    `User ${jid} ${
       enable ? "mengaktifkan" : "menonaktifkan"
     } notifikasi ${type}`,
     "info"
   );
-
   return `${enable ? "✅" : "❌"} ${
     type.charAt(0).toUpperCase() + type.slice(1)
   } notifications ${enable ? "activated" : "deactivated"}.`;
 }
 
-async function broadcast(jidsMap, message, logger) {
-  for (const [jid, name] of jidsMap.entries()) {
+async function broadcast(jids, message, logger) {
+  for (const jid of jids) {
     try {
       await sock.sendMessage(jid, { text: message });
-      logger(`📧 Pesan dikirim ke ${jid} (${name})`, "info");
+      logger(`📩 Pesan dikirim ke ${jid}`, "info");
     } catch (err) {
-      logger(`❌ Gagal kirim ke ${jid} (${name}): ${err}`, "error");
+      logger(`❌ Gagal kirim ke ${jid}: ${err}`, "error");
     }
   }
 }
@@ -121,15 +116,15 @@ async function broadcast(jidsMap, message, logger) {
 async function sendWa(deviceId, message) {
   const label = deviceLabels[deviceId] || deviceId;
   const msg = `[${label}] ${message}`;
-  let targetJidsMap;
+  let targetJids = [];
 
   if (deviceId === "ESP32-001") {
-    targetJidsMap = activeUserAlarmJids;
+    targetJids = [...activeUserAlarmJids];
   } else if (deviceId === "ESP32-002") {
-    targetJidsMap = activeUserBrankasJids;
+    targetJids = [...activeUserBrankasJids];
   }
 
-  await broadcast(targetJidsMap, msg, logWA);
+  await broadcast(targetJids, msg, logWA);
 }
 
 module.exports = {

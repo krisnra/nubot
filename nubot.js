@@ -16,6 +16,7 @@ const { esp32Devices } = require("./controllers/esp32Controller");
 const { startWhatsAppBot } = require("./service/waService");
 const { logServer, logESP32 } = require("./utils/dblogger");
 const { requireAuth } = require("./middleware/authMiddleware");
+const apiRoute = require("./routes/apiRoute");
 
 const app = express();
 const server = http.createServer(app);
@@ -39,6 +40,7 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 app.use("/esp32", esp32Routes);
+app.use("/api", apiRoute);
 app.use("/auth", authRoutes);
 app.use("/number", numberRoute);
 app.use("/device", deviceRoute);

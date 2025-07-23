@@ -1,6 +1,7 @@
 const { logAlarm, logBrankas } = require("../utils/dblogger");
 const { getAllowedDevices } = require("../config/whitelist");
 const { sendWa } = require("../service/waService");
+const { sendMail } = require("../service/mailService");
 const EventEmitter = require("events");
 
 const alarmEvents = new EventEmitter();
@@ -18,7 +19,9 @@ async function handleEsp32Data(req, res) {
     typeof deviceId !== "string" ||
     !allowedDevices.includes(deviceId)
   ) {
-    return res.status(403).json({ message: "❌ Akses ditolak! deviceId tidak diizinkan." });
+    return res
+      .status(403)
+      .json({ message: "❌ Akses ditolak! deviceId tidak diizinkan." });
   }
 
   if (!status && !data) {
@@ -41,6 +44,17 @@ async function handleEsp32Data(req, res) {
     } else if (deviceId === "ESP32-002") {
       logBrankas(data, "info");
       dataEvents.emit("dataUpdated", data);
+
+      // if (status === "mail") {
+      (async () => {
+        try {
+          await sendMail("Brankan Notification", `${data}`);
+          logBrankas(`Sukese mengirim email: ${data}`, "info");
+        } catch (e) {
+          logBrankas("Gagal mengirim email!", "error");
+        }
+      })();
+      // }
     }
     // Kirim notifikasi WA hanya ke role yang sesuai
     sendWa(deviceId, data);
@@ -55,7 +69,9 @@ async function updateEsp32Status(req, res) {
   const allowedDevices = await getAllowedDevices();
 
   if (!deviceId || !status || !allowedDevices.includes(deviceId)) {
-    return res.status(400).json({ message: "❌ Data tidak lengkap atau device tidak diizinkan!" });
+    return res
+      .status(400)
+      .json({ message: "❌ Data tidak lengkap atau device tidak diizinkan!" });
   }
 
   const existing = esp32Devices[deviceId] || {};

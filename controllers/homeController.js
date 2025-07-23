@@ -30,7 +30,7 @@ const homeController = {
       {
         name: "ESP32-001",
         status: isEsp32Active("ESP32-001") ? "Connected" : "Disconnected",
-        alarm: isAlarmActive, // digunakan di frontend untuk warna kuning
+        alarm: isAlarmActive,
       },
       {
         name: "ESP32-002",
@@ -42,8 +42,18 @@ const homeController = {
     res.render("home", {
       title: "ESP32 Status",
       esp32Devices,
-      activeUserAlarms: [...(activeUserAlarmJids || [])],
-      activeUserBrankas: [...(activeUserBrankasJids || [])],
+      activeUserAlarms: Array.from(activeUserAlarmJids.entries()).map(
+        ([jid, name]) => ({
+          jid,
+          name,
+        })
+      ),
+      activeUserBrankas: Array.from(activeUserBrankasJids.entries()).map(
+        ([jid, name]) => ({
+          jid,
+          name,
+        })
+      ),
     });
   },
 };
