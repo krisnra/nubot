@@ -7,7 +7,7 @@
     "start": "node nubot.js"
   },
   "dependencies": {
-    "baileys": "^6.7.12",
+    "baileys": "^6.7.18",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.3",
     "dotenv": "^16.4.7",

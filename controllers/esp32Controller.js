@@ -48,7 +48,7 @@ async function handleEsp32Data(req, res) {
       // if (status === "mail") {
       (async () => {
         try {
-          await sendMail("Brankan Notification", `${data}`);
+          await sendMail("[N-3] Brankan Notification - BETA TEST", `${data}`);
           logBrankas(`Sukese mengirim email: ${data}`, "info");
         } catch (e) {
           logBrankas("Gagal mengirim email!", "error");
